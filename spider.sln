@@ -1,0 +1,20 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "spider", "spider.pyproj", "{52F658B2-82F4-4F9D-8774-B5E331B1A508}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{52F658B2-82F4-4F9D-8774-B5E331B1A508}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52F658B2-82F4-4F9D-8774-B5E331B1A508}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52F658B2-82F4-4F9D-8774-B5E331B1A508}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52F658B2-82F4-4F9D-8774-B5E331B1A508}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
