@@ -27,11 +27,22 @@ re_conf = {'京东':{},'苏宁':{}}
 suning_conf = re_conf['苏宁']
 jd_conf = re_conf['京东']
 
+jd_conf['next_page_prefix'] = "http://list.jd.com/list.html"
+
+jd_conf['next_page'] = []
+jd_conf['next_page'].append(re.compile(r"<a href=\\\"([^>]*)\\\" class=\\\"next\\\">下一页.*"))
+
+jd_conf['item'] = []
+jd_conf['item'].append(re.compile(r"class=\\\"p-img\\\"><a target=\\\"_blank\\\" href=\\\"([^>]*)\\\"><img"))
+
 jd_conf['key_word'] = 'jd.com'
+
 jd_conf['brand'] = []
 jd_conf['brand'].append(re.compile("<li>品牌：<a.*>(.*)</a></li>"))
+
 jd_conf['name']  = []
 jd_conf['name'].append(re.compile("商品名称：(.*)</li>"))
+
 jd_conf['NO']    = []
 jd_conf['NO'].append(re.compile("商品编号：(.*)</li>"))
 
@@ -54,6 +65,17 @@ html_parser = HTMLParser.HTMLParser()
 
 g_source = None
 
+def search_info(src,res,is_all = False):
+    ans = None
+    for re in res:
+        tmp = re.findall(src)
+        if len(tmp) > 0:
+            if is_all:
+                return tmp
+            else:
+                ans = tmp[0]
+                break
+    return ans 
 
 def get_item_data(url):
     
@@ -90,9 +112,7 @@ def get_item_data(url):
     
 def spider(url,limit):
     next_page_url = url
-    base_url = "http://list.jd.com/list.html" 
-    page_re  = re.compile(r"<a href=\\\"([^>]*)\\\" class=\\\"next\\\">下一页.*")
-    item_re  = re.compile(r"class=\\\"p-img\\\"><a target=\\\"_blank\\\" href=\\\"([^>]*)\\\"><img")
+    next_page_prefix = conf['next_page_prefix']; 
     res = []
     while next_page_url != None:
         print next_page_url,'...'
@@ -104,7 +124,7 @@ def spider(url,limit):
             continue 
 
 
-        item_list = item_re.findall(data)
+        item_list = search_info(data,conf['item'],True)
         for item_url in item_list:
             item_data = get_item_data(item_url)
             if item_data != None:
@@ -112,9 +132,9 @@ def spider(url,limit):
 
         tmp = next_page_url
         next_page_url = None
-        tmp_url = page_re.findall(data)
-        if len(tmp_url) > 0:
-            next_page_url = base_url+html_parser.unescape(tmp_url[0])
+        tmp_url = search_info(data,conf['next_page'])
+        if tmp_url:
+            next_page_url = next_page_prefix+html_parser.unescape(tmp_url[0])
 
         if next_page_url == None or tmp == next_page_url:
             print 'end'
