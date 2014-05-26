@@ -68,8 +68,41 @@ jd_conf['feedback'].append(re.compile("已有(\d*)人评价"))
 
 
 ######################### su ning ##############################
+suning_conf['next_page_prefix'] = "http://list.suning.com/" 
+
+suning_conf['src_name'] = '苏宁'
+
+suning_conf['next_page'] = []
+suning_conf['next_page'].append(re.compile("class=\"next\" title=\"下一页\" href=\"([^>]*)\"><b></b>下一页"))
+
+suning_conf['item'] = []
+suning_conf['item'].append(re.compile("href='([^>]*)' target='_blank' name="))
+
 suning_conf['key_word'] = 'suning.com'
 
+suning_conf['brand'] = []
+suning_conf['brand'].append(re.compile("品牌：</span>\n</div>\n</td>\n\n<td width=\"72%\" class=\"td1\">([^<]*)<"))
+
+suning_conf['name']  = []
+suning_conf['name'].append(re.compile("<h1 class=\"wb\" title=\"([^ ]*) "))
+
+suning_conf['NO']    = []
+suning_conf['NO'].append(re.compile("商品编码</span>\n(\d*)"))
+
+suning_conf['size']  = []
+suning_conf['size'].append(re.compile("屏幕尺寸：</span>\n</div>\n</td>\n\n<td width=\"72%\" class=\"td1\">([^<]*)<"))
+
+suning_conf['detail'] = []
+suning_conf['detail'].append(re.compile("<h1 class=\"wb\" title=\".* (?:（|\()([^<]*)(?:）|\))[^\"]*\""))
+
+suning_conf['price']  = []
+suning_conf['price'].append(re.compile("id=\"netPrice\">¥?<em>([^<]*)<"))
+
+suning_conf['discount'] = []
+suning_conf['discount'].append(re.compile("class=\"promotion-content hide\".*<em>([^<]*)</em"))
+
+suning_conf['feedback'] = []
+suning_conf['feedback'].append(re.compile("<h2><span>评价\((\d*)\)"))
 ################################################################
 
 conf = None
@@ -111,6 +144,8 @@ def get_item_data(url):
         price = search_info(data,conf['price'])
         discount_set = search_info(data,conf['discount'],True)
         feedback = search_info(data,conf['feedback'])
+        if feedback == '':
+            feedback = '0'
         discount = ';'.join([str(index+1)+': '+disinfo for index,disinfo in enumerate(discount_set)])
     except Exception,e:
         print 'error',e
