@@ -1,12 +1,10 @@
 ﻿#coding=utf-8
-import getopt,sys,urllib2,re,os,time,json,HTMLParser
+import getopt,sys,urllib2,re,os,time,json,HTMLParser,unittest
 from selenium import webdriver
 reload(sys)
 sys.setdefaultencoding('utf-8')
 '''
-driver = webdriver.PhantomJS()
 
-driver.get('http://item.jd.com/1027344.html')
 data = driver.find_element_by_id('jd-price').text
 print data
 '''
@@ -27,7 +25,10 @@ re_conf = {'京东':{},'苏宁':{}}
 suning_conf = re_conf['苏宁']
 jd_conf = re_conf['京东']
 
+#######################  jd  ###############################
 jd_conf['next_page_prefix'] = "http://list.jd.com/list.html"
+
+jd_conf['src_name'] = '京东'
 
 jd_conf['next_page'] = []
 jd_conf['next_page'].append(re.compile(r"<a href=\\\"([^>]*)\\\" class=\\\"next\\\">下一页.*"))
@@ -44,69 +45,78 @@ jd_conf['name']  = []
 jd_conf['name'].append(re.compile("商品名称：(.*)</li>"))
 
 jd_conf['NO']    = []
-jd_conf['NO'].append(re.compile("商品编号：(.*)</li>"))
+jd_conf['NO'].append(re.compile("<li>商品编号：(.*)</li>"))
 
+jd_conf['size']  = []
+jd_conf['size'].append(re.compile("尺寸：(.*)</li>"))
+jd_conf['size'].append(re.compile("屏幕尺寸</td><td>([^<]*)</td>"))
+jd_conf['size'].append(re.compile("title>.*([\d\.]+英寸).*</title>"))
+
+jd_conf['detail'] = []
+jd_conf['detail'].append(re.compile("title>.*(?:（|\()(.*)(?:）|\)).*</title>"))
+
+jd_conf['price']  = []
+jd_conf['price'].append(re.compile("id=\"jd-price\">￥?([^<]*)<"))
+
+jd_conf['discount'] = []
+jd_conf['discount'].append(re.compile("<em class=\"hl_red\">([^<]*)</em"))
+
+jd_conf['feedback'] = []
+jd_conf['feedback'].append(re.compile("已有(\d*)人评价"))
+
+################################################################
+
+
+######################### su ning ##############################
 suning_conf['key_word'] = 'suning.com'
 
+################################################################
 
 conf = None
+driver = webdriver.PhantomJS()
 
-brand_re = re.compile("<li>品牌：<a.*>(.*)</a></li>")
-name_re = re.compile("商品名称：(.*)</li>")
-NO_re = re.compile("商品编号：(.*)</li>")
-price_base_url = 'http://p.3.cn/prices/get?skuid=J_'
-size_re = re.compile("尺寸：(.*)</li>")
-size2_re = re.compile("屏幕尺寸</td><td>([^<]*)</td>")
-size3_re = re.compile("title>.*([\d\.]+英寸).*</title>")
-conf_re = re.compile("title>.*(?:（|\()(.*)(?:）|\)).*</title>")
 time = time.strftime('%Y-%m-%d %H:%M:%S')
+
+log = open('tmp.txt','w+')
 
 html_parser = HTMLParser.HTMLParser()
 
 g_source = None
 
 def search_info(src,res,is_all = False):
-    ans = None
     for re in res:
         tmp = re.findall(src)
         if len(tmp) > 0:
             if is_all:
                 return tmp
             else:
-                ans = tmp[0]
-                break
-    return ans 
+                return tmp[0]
+    return '' if is_all==False else []
 
 def get_item_data(url):
     
     print url
     try:
-        data = urllib2.urlopen(url)
-        data = data.read().decode('gbk').encode('utf-8')
+        driver.get(url)
+        data = driver.page_source.encode('utf-8')
     except Exception,e:
         print "net error on item ",url,e
         return None
     try:
-        brand = brand_re.findall(data)[0]
-        name = name_re.findall(data)[0]
-        NO = NO_re.findall(data)[0]
-        size = size_re.findall(data)
-        if len(size)>0:
-            size = size[0]
-        else:
-            size = size2_re.findall(data)
-            if len(size)>0:
-                size = size[0]
-            else:
-                size = size3_re.findall(data)[0]
-        conf = conf_re.findall(data)[0]
-    except:
-        print 'error'
+        brand = search_info(data,conf['brand'])
+        name  = search_info(data,conf['name'])
+        NO    = search_info(data,conf['NO'])
+        size  = search_info(data,conf['size'])
+        detail = search_info(data,conf['detail'])
+        price = search_info(data,conf['price'])
+        discount_set = search_info(data,conf['discount'],True)
+        feedback = search_info(data,conf['feedback'])
+        discount = ';'.join([str(index+1)+': '+disinfo for index,disinfo in enumerate(discount_set)])
+    except Exception,e:
+        print 'error',e
         return None
 
-    price = urllib2.urlopen(price_base_url+NO)
-    price = json.loads(price.read())[0]['p'].encode('utf-8')
-    return (time,'京东',brand,name,NO,price,size,conf)
+    return (time,conf['src_name'],brand,name,NO,price,size,detail,discount,feedback)
 
     
     
@@ -133,8 +143,8 @@ def spider(url,limit):
         tmp = next_page_url
         next_page_url = None
         tmp_url = search_info(data,conf['next_page'])
-        if tmp_url:
-            next_page_url = next_page_prefix+html_parser.unescape(tmp_url[0])
+        if tmp_url!='':
+            next_page_url = next_page_prefix+html_parser.unescape(tmp_url)
 
         if next_page_url == None or tmp == next_page_url:
             print 'end'
@@ -173,9 +183,10 @@ if conf == None:
 
         
 
-header = ['监测时间','网上商城','品牌','名称','编号','价格','尺寸','产品配置汇总','促销','评论数']
+header = ['数据采集时间','数据来源','品牌','名称','编号','价格','尺寸','产品配置汇总','促销信息','评论总数']
 out_file = open('data_list.csv','w+')
 out_file.write((','.join(header)+'\n').decode('utf-8').encode('gbk'))
+
 data_list = spider(base_url,limit) 
 
 print 'save to data_list.csv...'
