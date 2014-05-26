@@ -93,7 +93,7 @@ suning_conf['size']  = []
 suning_conf['size'].append(re.compile("屏幕尺寸：</span>\n</div>\n</td>\n\n<td width=\"72%\" class=\"td1\">([^<]*)<"))
 
 suning_conf['detail'] = []
-suning_conf['detail'].append(re.compile("<h1 class=\"wb\" title=\".* (?:（|\()([^<]*)(?:）|\))[^\"]*\""))
+suning_conf['detail'].append(re.compile("<h1 class=\"wb\" title=\".* .*(?:（|\()([^<]*)(?:）|\))"))
 
 suning_conf['price']  = []
 suning_conf['price'].append(re.compile("id=\"netPrice\">¥?<em>([^<]*)<"))
@@ -147,6 +147,7 @@ def get_item_data(url):
         if feedback == '':
             feedback = '0'
         discount = ';'.join([str(index+1)+': '+disinfo for index,disinfo in enumerate(discount_set)])
+        print detail
     except Exception,e:
         print 'error',e
         return None
