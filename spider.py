@@ -1,5 +1,5 @@
 ﻿#coding=utf-8
-import getopt,sys,urllib2,re,os,time,json,HTMLParser,unittest
+import getopt,sys,urllib2,re,os,time,json,HTMLParser,urllib
 from selenium import webdriver
 reload(sys)
 sys.setdefaultencoding('utf-8')
@@ -11,9 +11,10 @@ print data
 help = '''usage:
 python ./spider.py -u base_url 
     -u: base_url.
+    -q: quickly mode.
 '''
 try:
-    args,opts = getopt.getopt(sys.argv[1:],"u:h")
+    args,opts = getopt.getopt(sys.argv[1:],"u:hq")
 except:
     print "invalid args."
     print help
@@ -24,6 +25,7 @@ re_conf = {'京东':{},'苏宁':{}}
 
 suning_conf = re_conf['苏宁']
 jd_conf = re_conf['京东']
+FAST = False
 
 #######################  jd  ###############################
 jd_conf['next_page_prefix'] = "http://list.jd.com/list.html"
@@ -57,6 +59,12 @@ jd_conf['detail'].append(re.compile("title>.*(?:（|\()(.*)(?:）|\)).*</title>"
 
 jd_conf['price']  = []
 jd_conf['price'].append(re.compile("id=\"jd-price\">￥?([^<]*)<"))
+jd_conf['price_url'] = 'http://p.3.cn/prices/get?skuid=J_'
+def get_jd_price(url):
+    res = urllib2.urlopen(url)
+    res = json.loads(res.read())[0]['p'].encode('utf-8')
+    return res
+jd_conf['price_api'] = get_jd_price
 
 jd_conf['discount'] = []
 jd_conf['discount'].append(re.compile("<em class=\"hl_red\">([^<]*)</em"))
@@ -84,7 +92,7 @@ suning_conf['brand'] = []
 suning_conf['brand'].append(re.compile("品牌：</span>\n</div>\n</td>\n\n<td width=\"72%\" class=\"td1\">([^<]*)<"))
 
 suning_conf['name']  = []
-suning_conf['name'].append(re.compile("<h1 class=\"wb\" title=\"([^ ]*) "))
+suning_conf['name'].append(re.compile("<h1 class=\"wb\" title=\"([^ \"]*)"))
 
 suning_conf['NO']    = []
 suning_conf['NO'].append(re.compile("商品编码</span>\n(\d*)"))
@@ -93,10 +101,11 @@ suning_conf['size']  = []
 suning_conf['size'].append(re.compile("屏幕尺寸：</span>\n</div>\n</td>\n\n<td width=\"72%\" class=\"td1\">([^<]*)<"))
 
 suning_conf['detail'] = []
-suning_conf['detail'].append(re.compile("<h1 class=\"wb\" title=\".* .*(?:（|\()([^<]*)(?:）|\))"))
+suning_conf['detail'].append(re.compile("<h1 class=\"wb\" title=\".* .*(?:电脑|笔记本)(?:（|\()([^>]*)(?:）|\))"))
 
 suning_conf['price']  = []
 suning_conf['price'].append(re.compile("id=\"netPrice\">¥?<em>([^<]*)<"))
+suning_conf['price'].append(re.compile("id=\"promotionPrice\">¥?<em>([^<]*)<"))
 
 suning_conf['discount'] = []
 suning_conf['discount'].append(re.compile("class=\"promotion-content hide\".*<em>([^<]*)</em"))
@@ -109,8 +118,6 @@ conf = None
 driver = webdriver.PhantomJS()
 
 time = time.strftime('%Y-%m-%d %H:%M:%S')
-
-log = open('tmp.txt','w+')
 
 html_parser = HTMLParser.HTMLParser()
 
@@ -130,8 +137,15 @@ def get_item_data(url):
     
     print url
     try:
-        driver.get(url)
-        data = driver.page_source.encode('utf-8')
+        if FAST == True:
+            data = urllib2.urlopen(url)
+            if conf['src_name'] == '京东':
+                data = data.read().decode('gbk').encode('utf-8')
+            else:
+                data = data.read()
+        else:
+            driver.get(url)
+            data = driver.page_source.encode('utf-8')
     except Exception,e:
         print "net error on item ",url,e
         return None
@@ -142,12 +156,13 @@ def get_item_data(url):
         size  = search_info(data,conf['size'])
         detail = search_info(data,conf['detail'])
         price = search_info(data,conf['price'])
+        if price == '' and 'price_api' in conf:
+            price = conf['price_api'](conf['price_url']+NO)
         discount_set = search_info(data,conf['discount'],True)
         feedback = search_info(data,conf['feedback'])
         if feedback == '':
             feedback = '0'
         discount = ';'.join([str(index+1)+': '+disinfo for index,disinfo in enumerate(discount_set)])
-        print detail
     except Exception,e:
         print 'error',e
         return None
@@ -180,7 +195,7 @@ def spider(url,limit):
         next_page_url = None
         tmp_url = search_info(data,conf['next_page'])
         if tmp_url!='':
-            next_page_url = next_page_prefix+html_parser.unescape(tmp_url)
+            next_page_url = next_page_prefix+html_parser.unescape(tmp_url).encode('utf-8')
 
         if next_page_url == None or tmp == next_page_url:
             print 'end'
@@ -199,6 +214,8 @@ for arg,opt in args:
     elif arg=='-h':
         print help
         exit(0)
+    elif arg=='-q':
+        FAST = True 
     else:
         limit[arg[1:]] = float(opt)
 
