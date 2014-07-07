@@ -13,7 +13,7 @@
     <Name>spider</Name>
     <RootNamespace>spider</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>-u "http://list.jd.com/list.html?cat=670%2C671%2C672&amp;page=1&amp;brand=48100%2C%E9%9B%B7%E7%A5%9E%EF%BC%88ThundeRobot%EF%BC%89" -q</CommandLineArguments>
+    <CommandLineArguments>-u "http://list.jd.com/list.html?cat=670%2C671%2C672&amp;page=1&amp;brand=11516%2C%E8%81%94%E6%83%B3%EF%BC%88Lenovo%EF%BC%89&amp;price=M2300L2999"</CommandLineArguments>
     <InterpreterPath />
     <InterpreterArguments>
     </InterpreterArguments>

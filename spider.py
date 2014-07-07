@@ -36,7 +36,7 @@ jd_conf['next_page'] = []
 jd_conf['next_page'].append(re.compile(r"<a href=\\\"([^>]*)\\\" class=\\\"next\\\">下一页.*"))
 
 jd_conf['item'] = []
-jd_conf['item'].append(re.compile(r"class=\\\"p-img\\\"><a target=\\\"_blank\\\" href=\\\"([^>]*)\\\"><img"))
+jd_conf['item'].append(re.compile(r"class=\\\"p-img\\\"><a target=\\\"_blank\\\" href=\\\"([^> ]*)\\\""))
 
 jd_conf['key_word'] = 'jd.com'
 
